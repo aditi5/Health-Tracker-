@@ -1,0 +1,35 @@
+name: Luma
+options:
+  bundleIdPrefix: app.luma
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: app.luma.health
+    SWIFT_VERSION: "5.0"
+    FRAMEWORK_SEARCH_PATHS: $(inherited) $(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+    OTHER_LDFLAGS: $(inherited) -framework HealthTracker
+  configs:
+    Debug:
+      API_BASE_URL: http://localhost:8000/api/v1
+    Release:
+      API_BASE_URL: ""
+targets:
+  Luma:
+    type: application
+    platform: iOS
+    sources:
+      - LumaApp.swift
+    preBuildScripts:
+      - name: Build shared Kotlin framework
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "$CONFIGURATION" = "Release" ]; then
+            case "$API_BASE_URL" in https://*) ;; *) echo "Release API_BASE_URL must use HTTPS"; exit 1;; esac
+          fi
+          cd "$SRCROOT/.."
+          sh ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
+    settings:
+      base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        INFOPLIST_FILE: Info.plist
